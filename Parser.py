@@ -46,7 +46,7 @@ class Assignment():
 
     def run(self):
         expr_val = self.expr.run()
-        var_dict[id] = expr_val
+        var_dict[self.id] = expr_val
         return expr_val
 
 
