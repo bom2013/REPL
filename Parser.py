@@ -5,42 +5,16 @@ var_dict = {}
 
 class Expr():
     factor = None
-    opr_expr = None
+    mathExpr = None
 
-    def __init__(self, factor=None, opr_expr=None):
+    def __init__(self, factor=None, mathExpr=None):
         self.factor = factor
-        self.opr_expr = opr_expr
+        self.mathExpr = mathExpr
 
     def run(self):
         if factor:
             return self.factor.run()
-        return self.opr_expr.run()
-
-
-class Opr():
-    opr = None
-    left = None
-    right = None
-
-    def __init__(self, opr, left, right):
-        self.opr = opr
-        self.left = left
-        self.right = right
-
-    def run(self):
-        left_val = self.left.run()
-        right_val = self.right.run()
-        if opr == "+":
-            return left_val + right_val
-        if opr == "-":
-            return left_val - right_val
-        if opr == "*":
-            return left_val * right_val
-        if opr == "/":
-            return left_val / right_val
-        if opr == "%":
-            return left_val % right_val
-        raise Exception("Error: Missing / unidentified operator")
+        return self.mathExpr.run()
 
 
 class Factor():
@@ -76,12 +50,76 @@ class Assignment():
         return expr_val
 
 
+class Identifier:
+    def __init__(self, id):
+        self.id = id
+
+    def run(self):
+        try:
+            return var_dict[self.id]
+        except:
+            raise Exception(
+                f"ERROR: Invalid identifier. No variable with name '{self.id}' was found")
+
+
+class Literal:
+    def __init__(self, value):
+        self.value = value
+
+    def run(self):
+        return self.value
+
+
+class Grouping:
+    def __init__(self, expr):
+        self.expr = expr
+
+    def run(self):
+        return self.expr.run()
+
+
+class Unary:
+    def __init__(self, operator, right):
+        self.operator = operator
+        self.right = right
+
+    def run(self):
+        right_val = self.right.run()
+        if self.operator.type == TokenType.MINUS:
+            return -right_val
+        return right_val
+
+
+class Binary:
+    def __init__(self, left, operator, right):
+        self.left = left
+        self.operator = operator
+        self.right = right
+
+    def run(self):
+        left_val = self.left.run()
+        right_val = self.right.run()
+        if self.operator.type == TokenType.PLUS:
+            return left_val + right_val
+        if self.operator.type == TokenType.MINUS:
+            return left_val - right_val
+        if self.operator.type == TokenType.STAR:
+            return left_val * right_val
+        if self.operator.type == TokenType.SLASH:
+            return left_val / right_val
+
+
 class Parser():
     '''
     The syntex for this parser:
 
-    expr -> factor | expr opr expr
-    factor -> num | id | assignment | '(' expr ')'
+    expr -> factor | mathExpr
+    mathExpr -> add
+    add -> mult( ( "-" | "+" ) mult)*
+    mult -> unary ( ( "/" | "*" ) unary )*
+    unary -> ("-") unary | primary
+    primary -> literal | "(" expr ")"
+    factor -> num | id | assignment
     assignment -> id '=' expr
     opr -> '+' | '-' | '*' | '/' | '%'
     id -> letter | '_' { id_char }
@@ -96,42 +134,85 @@ class Parser():
         self.index = 0
 
     def parse(self):
-        def is_operator(op):
-            return op in "+-/%*"
-
-        def is_have_opr_in_code(offset=0):
-            return len([i for i in self.tokens[offset:] if is_operator(i.value)]) > 0
-
-        def match(*args, offset=0):
-            for type in args:
-                if (check(type, offset)):
-                    advance(offset)
-                    return True
-            return False
-
-        def check(type, offset=0):
-            if is_end(offset):
-                return False
-            return peek(offset).type == type
-
-        def advance(offset=0):
-            if not is_end():
-                self.index += 1 + offset
-            return prev(-offset)
-
-        def prev(offset=0):
-            return self.tokens[self.index - 1 + offset]
-
-        def peek(offset=0):
-            return self.tokens[self.index + offset]
-
+        '''
+        Because it's interactive interpreter, the parser need to work on one line command
+        '''
         def is_end():
             return self.index >= len(self.tokens)
 
-        def expression(offset=0):
-            if check(TokenType.IDENTIFIER):
-                if check(TokenType.EQUAL, 1):
-                    return assignment()
-                left = expr()
+        def check(type, offset=0):
+            if is_end():
+                return False
+            return peek(offset).type == type
+
+        def match(*args):
+            for type in args:
+                if (check(type)):
+                    advance()
+                    return True
+            return False
+
+        def advance():
+            if not is_end():
+                self.index += 1
+            return prev()
+
+        def prev():
+            return self.tokens[self.index - 1]
+
+        def peek(offset=0):
+            return self.tokens[self.index+offset]
+
+        def remaining_tokens():
+            return len(self.tokens) - self.index
+
+        def expression():
+            if is_end():
+                return None  # it's smart?
+            if remaining_tokens() == 1:
+                if check(TokenType.NUMBER):
+                    return Literal(advance().value)
+                if check(TokenType.IDENTIFIER):
+                    return Identifier(advance().value)
+            if check(TokenType.EQUAL, 1):
+                id = advance()
+                advance()  # '='
+                expr = expression()
+                return Assignment(id.value, expr)
+            mathExpr()
+
+        def mathExpr():
+            addition()
+
+        def addition():
+            expr = multiplication()
+            while match(TokenType.MINUS, TokenType.PLUS):
+                operator = prev()
+                right = multiplication()
+                expr = Binary(expr, operator, right)
+            return expr
+
+        def multiplication():
+            expr = unary()
+            while match(TokenType.SLASH, TokenType.STAR):
+                operator = prev()
+                right = unary()
+                expr = Binary(expr, operator, right)
+            return expr
+
+        def unary():
+            if match(TokenType.MINUS):
+                operator = prev()
+                right = unary()
+                return Unary(operator, right)
+            return primary()
+
+        def primary():
+            if match(TokenType.NUMBER):
+                return Literal(prev().value)
+            if match(TokenType.LEFT_PAREN):
+                expr = expression()
+                advance()
+                return Grouping(expr)
 
         expression()
