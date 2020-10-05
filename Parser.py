@@ -24,7 +24,7 @@ class Factor():
         self.value = value
 
     def run(self):
-        if isinstance(self.value, float):
+        if isinstance(self.value, int):
             return self.value
         if isinstance(self.value, Assignment):
             return self.value.run()
