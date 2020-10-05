@@ -24,12 +24,12 @@ class Factor():
         self.value = value
 
     def run(self):
-        if isinstance(self.value, float):
+        if isinstance(self.value, int):
             return self.value
         if isinstance(self.value, Assignment):
             return self.value.run()
         if isinstance(self.value, Expr):
-            return Expr.run()
+            return self.value.run()
         try:
             return var_dict[self.value]
         except:
@@ -45,8 +45,8 @@ class Assignment():
         self.expr = expr
 
     def run(self):
-        expr_val = expr.run()
-        var_dict[id] = expr_val
+        expr_val = self.expr.run()
+        var_dict[self.id] = expr_val
         return expr_val
 
 
@@ -118,7 +118,7 @@ class Parser():
     add -> mult( ( "-" | "+" ) mult)*
     mult -> unary ( ( "/" | "*" ) unary )*
     unary -> ("-") unary | primary
-    primary -> literal | "(" expr ")"
+    primary -> literal | id | "(" expr ")"
     factor -> num | id | assignment
     assignment -> id '=' expr
     opr -> '+' | '-' | '*' | '/' | '%'
@@ -179,10 +179,10 @@ class Parser():
                 advance()  # '='
                 expr = expression()
                 return Assignment(id.value, expr)
-            mathExpr()
+            return mathExpr()
 
         def mathExpr():
-            addition()
+            return addition()
 
         def addition():
             expr = multiplication()
@@ -210,9 +210,11 @@ class Parser():
         def primary():
             if match(TokenType.NUMBER):
                 return Literal(prev().value)
+            if match(TokenType.IDENTIFIER):
+                return Identifier(prev().value)
             if match(TokenType.LEFT_PAREN):
                 expr = expression()
                 advance()
                 return Grouping(expr)
 
-        expression()
+        return expression()

@@ -43,7 +43,7 @@ class Scanner():
                 while is_digit(peek()):
                     next()
             self.tokens.append(
-                Token(TokenType.NUMBER, float(self.text[start:self.index])))
+                Token(TokenType.NUMBER, int(self.text[start:self.index])))
 
         def identifier():
             start = self.index - 1
@@ -70,6 +70,8 @@ class Scanner():
                 self.tokens.append(Token(TokenType.STAR, "*"))
             elif c == "=":
                 self.tokens.append(Token(TokenType.EQUAL, "="))
+            elif c == " ":
+                pass
             elif is_digit(c):
                 number()
             elif c.isalpha():
