@@ -24,7 +24,7 @@ class Factor():
         self.value = value
 
     def run(self):
-        if isinstance(self.value, int):
+        if isinstance(self.value, float):
             return self.value
         if isinstance(self.value, Assignment):
             return self.value.run()
@@ -46,7 +46,7 @@ class Assignment():
 
     def run(self):
         expr_val = self.expr.run()
-        var_dict[self.id] = expr_val
+        var_dict[id] = expr_val
         return expr_val
 
 
@@ -107,6 +107,8 @@ class Binary:
             return left_val * right_val
         if self.operator.type == TokenType.SLASH:
             return left_val / right_val
+        if self.operator.type == TokenType.MODULO:
+            return left_val % right_val
 
 
 class Parser():
@@ -116,9 +118,9 @@ class Parser():
     expr -> factor | mathExpr
     mathExpr -> add
     add -> mult( ( "-" | "+" ) mult)*
-    mult -> unary ( ( "/" | "*" ) unary )*
+    mult -> unary ( ( "/" | "*" | "%" ) unary )*
     unary -> ("-") unary | primary
-    primary -> literal | id | "(" expr ")"
+    primary -> literal | "(" expr ")"
     factor -> num | id | assignment
     assignment -> id '=' expr
     opr -> '+' | '-' | '*' | '/' | '%'
@@ -194,7 +196,7 @@ class Parser():
 
         def multiplication():
             expr = unary()
-            while match(TokenType.SLASH, TokenType.STAR):
+            while match(TokenType.SLASH, TokenType.STAR, TokenType.MODULO):
                 operator = prev()
                 right = unary()
                 expr = Binary(expr, operator, right)
@@ -210,8 +212,6 @@ class Parser():
         def primary():
             if match(TokenType.NUMBER):
                 return Literal(prev().value)
-            if match(TokenType.IDENTIFIER):
-                return Identifier(prev().value)
             if match(TokenType.LEFT_PAREN):
                 expr = expression()
                 advance()
