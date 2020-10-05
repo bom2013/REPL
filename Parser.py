@@ -29,7 +29,7 @@ class Factor():
         if isinstance(self.value, Assignment):
             return self.value.run()
         if isinstance(self.value, Expr):
-            return Expr.run()
+            return self.value.run()
         try:
             return var_dict[self.value]
         except:
@@ -45,7 +45,7 @@ class Assignment():
         self.expr = expr
 
     def run(self):
-        expr_val = expr.run()
+        expr_val = self.expr.run()
         var_dict[id] = expr_val
         return expr_val
 
@@ -179,10 +179,10 @@ class Parser():
                 advance()  # '='
                 expr = expression()
                 return Assignment(id.value, expr)
-            mathExpr()
+            return mathExpr()
 
         def mathExpr():
-            addition()
+            return addition()
 
         def addition():
             expr = multiplication()
@@ -215,4 +215,4 @@ class Parser():
                 advance()
                 return Grouping(expr)
 
-        expression()
+        return expression()

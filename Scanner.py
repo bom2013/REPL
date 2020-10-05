@@ -70,6 +70,8 @@ class Scanner():
                 self.tokens.append(Token(TokenType.STAR, "*"))
             elif c == "=":
                 self.tokens.append(Token(TokenType.EQUAL, "="))
+            elif c == " ":
+                pass
             elif is_digit(c):
                 number()
             elif c.isalpha():
