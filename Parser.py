@@ -107,6 +107,8 @@ class Binary:
             return left_val * right_val
         if self.operator.type == TokenType.SLASH:
             return left_val / right_val
+        if self.operator.type == TokenType.MODULO:
+            return left_val % right_val
 
 
 class Parser():
@@ -116,7 +118,7 @@ class Parser():
     expr -> factor | mathExpr
     mathExpr -> add
     add -> mult( ( "-" | "+" ) mult)*
-    mult -> unary ( ( "/" | "*" ) unary )*
+    mult -> unary ( ( "/" | "*" | "%" ) unary )*
     unary -> ("-") unary | primary
     primary -> literal | "(" expr ")"
     factor -> num | id | assignment
@@ -194,7 +196,7 @@ class Parser():
 
         def multiplication():
             expr = unary()
-            while match(TokenType.SLASH, TokenType.STAR):
+            while match(TokenType.SLASH, TokenType.STAR, TokenType.MODULO):
                 operator = prev()
                 right = unary()
                 expr = Binary(expr, operator, right)
