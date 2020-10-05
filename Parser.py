@@ -134,6 +134,15 @@ class Parser():
     def __init__(self, tokens):
         self.tokens = tokens
         self.index = 0
+        self.validation(tokens)
+
+    def validation(self, tokens):
+        for i in range(len(tokens)):
+            if tokens[i].type == TokenType.NUMBER or tokens[i].type == TokenType.IDENTIFIER:
+                if i+1 < len(tokens):
+                    if tokens[i+1].type == TokenType.NUMBER or tokens[i+1].type == TokenType.IDENTIFIER:
+                        raise Exception(
+                            f"Error: no operator between {tokens[i]} and {tokens[i+1]}")
 
     def parse(self):
         '''
@@ -212,6 +221,8 @@ class Parser():
         def primary():
             if match(TokenType.NUMBER):
                 return Literal(prev().value)
+            if match(TokenType.IDENTIFIER):
+                return Identifier(prev().value)
             if match(TokenType.LEFT_PAREN):
                 expr = expression()
                 advance()
